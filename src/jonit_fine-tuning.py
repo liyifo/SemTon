@@ -18,7 +18,7 @@ def set_seed(seed):
     torch.manual_seed(seed)
 seed = 42
 set_seed(seed)
-log_file_path = './model_metric-v6_CCL.txt'
+log_file_path = './model_metric.txt'
 
 # 数据集类
 class SymptomDrugDataset(Dataset):
@@ -111,47 +111,9 @@ class GCN(torch.nn.Module):
         mx = r_mat_inv.dot(mx)
         return mx
     
-class SelfAttention(nn.Module):
-    def __init__(self, embed_dim):
-        super(SelfAttention, self).__init__()
-        self.embed_dim = embed_dim
-        self.query = nn.Linear(embed_dim, embed_dim)
-        self.key = nn.Linear(1024, embed_dim)
-        self.value = nn.Linear(1024, embed_dim)
-        self.softmax = nn.Softmax(dim=-1)
-        self.gama = nn.Parameter(torch.FloatTensor(1))
 
-    def forward(self, med_emb, sym_emb, co_emb=None):
 
-        # 计算查询、键和值
-        queries = self.query(sym_emb) # shape: (batch, embedding_dim)
-        keys = self.key(med_emb) # shape: (med_num, embedding_dim)
-        values = self.value(med_emb) # shape: (med_num, embedding_dim)
-        
-        # 计算注意力得分
-        attention_scores = torch.matmul(queries, keys.transpose(-2, -1)) / (self.embed_dim ** 0.5) # shape: (batch, med_num)
-        
-        attention_weights = self.softmax(attention_scores) # shape: (batch, med_num)
-        # print(attention_scores.shape, attention_weights.unsqueeze(-1).shape)
-        
-        if co_emb != None:
-            values = values + self.gama*co_emb
-
-        # 计算加权的值 (batch, med_num, 1) * (1, med_num, embedding_dim) = (batch,med_num,embedding_dim)
-        weighted_values = attention_weights.unsqueeze(-1)* values.unsqueeze(0)
-
-        
-        return weighted_values
-
-# 对比损失函数实现
-def contrastive_loss_fn(fcn_embedding, bert_embedding, temperature=0.1):
-    cos_sim_matrix = F.cosine_similarity(fcn_embedding.unsqueeze(1), bert_embedding.unsqueeze(0), dim=-1)
-    labels = torch.arange(cos_sim_matrix.size(0)).to(fcn_embedding.device)
-    contrastive_loss = F.cross_entropy(cos_sim_matrix / temperature, labels)
-    return contrastive_loss
-
-# 模型定义
-class BERTForMultiLabelClassification(nn.Module):
+class SemTon(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
 
@@ -159,15 +121,12 @@ class BERTForMultiLabelClassification(nn.Module):
         self.tongue_bert = BertModel.from_pretrained('./shexiang_bert_model')
         self.dropout = torch.nn.Dropout(p=0.2)
         for param in self.text_bert.parameters():
-            param.requires_grad = False 
+            param.requires_grad = False  # 冻结BERT本体
         for param in self.tongue_bert.parameters():
-            param.requires_grad = False
-
+            param.requires_grad = False  # 冻结BERT本体
 
         self.patient_fcn = torch.nn.Sequential(
-            torch.nn.Linear(self.text_bert.config.hidden_size*2, self.text_bert.config.hidden_size),
-            torch.nn.ReLU(),
-            torch.nn.Linear(self.text_bert.config.hidden_size, 64),
+            torch.nn.Linear(self.text_bert.config.hidden_size*2, 64),
 
         )
         self.final_fcn = torch.nn.Sequential(
@@ -176,13 +135,10 @@ class BERTForMultiLabelClassification(nn.Module):
         )
 
         self.med_fcn = torch.nn.Sequential(
-            torch.nn.Linear(self.text_bert.config.hidden_size, self.text_bert.config.hidden_size),
-            torch.nn.ReLU(),
             torch.nn.Linear(self.text_bert.config.hidden_size, 64),
 
         )
         self.gama = nn.Parameter(torch.FloatTensor(1))
-
 
         self.med_gcn =  GCN(voc_size=num_classes, emb_dim=64, ehr_adj=co_adj, device=device)
         
@@ -198,19 +154,18 @@ class BERTForMultiLabelClassification(nn.Module):
         tongue_embedding = self.tongue_bert(input_ids=symptom_input_ids, attention_mask=symptom_attention_mask)
         tongue_embedding = tongue_embedding.last_hidden_state[:, 0, :]
 
-
-
-        # 生成患者表示
         combined_representation = torch.cat([text_embedding, tongue_embedding], dim=-1)
-
         patient_emb = self.patient_fcn(combined_representation)
-        
 
-        # # 获得药物表示
+    
+
         med_embedding = self.text_bert(input_ids=med_input_ids, attention_mask=med_attention_mask)
         med_embedding = med_embedding.last_hidden_state[:, 0, :] # (med_num, dimension)
 
-        med_embedding = self.med_fcn(med_embedding)+ self.gama*self.med_gcn()
+        med_embedding = self.med_fcn(med_embedding)
+
+        med_embedding = med_embedding + self.gama*self.med_gcn()
+
 
         recommendation_output = self.final_fcn(F.softmax(patient_emb@med_embedding.transpose(0,1), dim=-1)@med_embedding + patient_emb)
 
@@ -282,19 +237,13 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
                 all_labels.append(labels)
         all_predictions = torch.cat(all_predictions, dim=0)
         all_labels = torch.cat(all_labels, dim=0)
-        # print(all_predictions.shape, all_labels.shape)
 
-        # 计算测试集指标
-        # metrics = compute_metrics(all_predictions, all_labels)
-        # print(f"Epoch {epoch + 1} - Testing Metrics: {metrics}")
-        # with open(log_file_path, 'a') as f:
-        #     f.write(f"Epoch {epoch + 1} - Loss: {avg_train_loss} - Testing Metrics: {metrics}\n")
-        
         threshold = 0.2
         metrics = compute_metrics(all_predictions, all_labels, threshold=threshold)
         print(f"Epoch {epoch + 1} - Testing Metrics: {metrics} - Threshold: {threshold}")
         with open(log_file_path, 'a') as f:
             f.write(f"Epoch {epoch + 1} - Loss: {avg_train_loss} - Testing Metrics: {metrics} - Threshold: {threshold}\n")
+                # 更新最佳结果
         if metrics["Jaccard"] > best_metrics["Jaccard"]:
             best_metrics = metrics
             best_metrics["epoch"] = epoch + 1
@@ -309,10 +258,6 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
             break
 
 
-        # 更新最佳结果
-        # if metrics["Jaccard"] > best_metrics["Jaccard"]:
-        #     best_metrics = metrics
-        #     best_metrics["epoch"] = epoch + 1
 
     print(f"Best Epoch: {best_metrics['epoch']}, Metrics: {best_metrics}")
     return model, best_metrics
@@ -325,7 +270,7 @@ if __name__ == "__main__":
     # tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
     tokenizer = BertTokenizer.from_pretrained("./zy-bert")
     print('tokenizer加载完毕..')
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print('device:', device)
 
     medname_inputs = tokenizer(name_list, return_tensors="pt", padding=True, truncation=True).to(device)
@@ -335,6 +280,5 @@ if __name__ == "__main__":
     learning_rate = 1e-3
 
     train_loader, test_loader = prepare_data(data, tokenizer, batch_size)
-    model = BERTForMultiLabelClassification(herb_num)
+    model = SemTon(herb_num)
     trained_model, best_metrics = train_model(model, train_loader, test_loader, num_epochs, device, learning_rate, medname_inputs)
-
