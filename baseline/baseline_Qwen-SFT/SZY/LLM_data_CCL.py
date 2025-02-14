@@ -9,8 +9,8 @@ import logging
 patients = []
 patient_dict = {}
 # 读取 CSV 文件
-data_path = '/home/wangcong24/CCL2025/data/TCM-TBOSD-train.json'
-output_path = '/home/wangcong24/CCL2025/train_data/train.jsonl'
+data_path = '../../../data/TCM-TBOSD-train.json'
+output_path = '../../../ddata/train.jsonl'
 data = json.load(open(data_path, 'r', encoding='utf-8'))
 print(f'总病历数：{len(data)}')
 # 使用tqdm显示进度条
