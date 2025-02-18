@@ -25,6 +25,22 @@ Here, we extracted 50 complete samples in each of RSJ1 and SZY for reference. Pl
 
 The full datasets will be made publicly avail able once the manuscript is accepted.
 
+- `data/`
+
+  - **RSJ1.json**
+
+  - **SZY.json**
+
+  - **images.zip**: Images corresponding to RSJ1 dataset.
+
+| **Items**                           | **RSJ1**        | **SZY**      |
+| ----------------------------------- | --------------- | ------------ |
+| **# of patients / # of herbs**      | 1,000 / 1,048   | 1,500 / 369  |
+| **avg. / max # of herbs**           | 11.23 / 26      | 15.11 / 39   |
+| **avg. / max # of symptom text**    | 122.91 / 393    | 136.42 / 388 |
+| **avg. / max # of tongue text**     | 6.35 / 20       | -            |
+| **avg. size of image width/height** | 267.15 / 277.39 | -            |
+
 ## Run the SemTon
 
 You can train and test the model using the following command:
