@@ -4,7 +4,7 @@ import random
 import torch
 from data import *
 from torch.utils.data import DataLoader, Dataset, random_split
-# 数据集类
+
 class SymptomDrugDataset(Dataset):
     def __init__(self, data, max_length):
         self.data = data
@@ -24,7 +24,7 @@ def set_seed(seed):
 seed = 42
 set_seed(seed)
 
-# 数据预处理
+
 def prepare_data(data, batch_size, train_ratio=0.8):
     dataset = SymptomDrugDataset(data, max_length=64)
     train_size = int(len(dataset) * train_ratio)

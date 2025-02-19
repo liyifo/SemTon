@@ -51,7 +51,6 @@ class BERTForMultiLabelClassification(nn.Module):
         logits = self.classifier(pooled_output)
         return logits
 
-# Metrics
 def compute_metrics(predictions, labels, threshold=0.1):
     preds = (predictions > threshold).int()
     f1 = f1_score(labels.cpu(), preds.cpu(), average="samples")
@@ -60,7 +59,6 @@ def compute_metrics(predictions, labels, threshold=0.1):
     avg_drug_count = preds.sum(axis=1).float().mean().item()
     return {"F1": f1, "Jaccard": jaccard, "PRAUC": prauc, "AVG": avg_drug_count}
 
-# 数据预处理
 def prepare_data(data, tokenizer, batch_size, train_ratio=0.8):
     dataset = SymptomDrugDataset(data, tokenizer, max_length=128)
     train_size = int(len(dataset) * train_ratio)
@@ -70,7 +68,6 @@ def prepare_data(data, tokenizer, batch_size, train_ratio=0.8):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, test_loader
 
-# 训练函数
 def train_model(model, train_loader, test_loader, num_epochs, device, learning_rate):
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     criterion_bce = nn.BCEWithLogitsLoss()
@@ -81,7 +78,6 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
     model.to(device)
 
     for epoch in range(num_epochs):
-        # 训练阶段
         model.train()
         train_loss = 0.0
         for input_ids, attention_mask, labels in tqdm(train_loader, desc=f"Epoch {epoch + 1} Training"):

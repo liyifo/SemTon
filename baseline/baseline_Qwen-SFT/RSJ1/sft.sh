@@ -26,5 +26,4 @@ swift sft \
     --save_only_model true
 
 
-# 部署
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2_5 --ckpt_dir output/v3-20250208-201535/checkpoint-485 --merge_lora true

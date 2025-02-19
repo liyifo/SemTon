@@ -56,19 +56,18 @@ avg_list = []
 for i in range(len(labels)):
     for j in range(len(preds)):
         lebel = labels[i]['response']
-        # 把label按照逗号分隔成list
+
         label = lebel.split(',')
         pred = preds[j]['pred']
-        # 去重
+
         label = list(set(label))
         pred = list(set(pred))
-        # 过滤掉空字符串和med_name中不存在的药物
+
         label = [k for k in label if k != '' and k in med_name]
         pred = [k for k in pred if k != '' and k in med_name]
         if (len(label) == 0) or (len(pred) == 0):
             continue
-        # print(len(label), len(pred))
-        # 计算指标
+
         ja = jaccard_similarity(set(label), set(pred))
         f1 = f1_score(set(label), set(pred))
         prauc = 0

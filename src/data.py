@@ -7,7 +7,6 @@ def read_single_classifier_data():
         data_list = json.load(json_file)
     end_data = []
     end_data.append([(i['chief_complaint']+i['medical_history'], i['baohou']) for i in data_list])
-    # end_data.append([(i['chief_complaint']+i['medical_history'], i['boluo']) for i in data_list])
     end_data.append([(i['chief_complaint']+i['medical_history'], i['funi']) for i in data_list])
     end_data.append([(i['chief_complaint']+i['medical_history'], i['runzao']) for i in data_list])
 

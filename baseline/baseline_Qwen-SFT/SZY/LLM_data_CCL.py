@@ -8,29 +8,28 @@ import logging
 
 patients = []
 patient_dict = {}
-# 读取 CSV 文件
+
 data_path = '../../../data/TCM-TBOSD-train.json'
 output_path = '../../../ddata/train.jsonl'
 data = json.load(open(data_path, 'r', encoding='utf-8'))
 print(f'总病历数：{len(data)}')
-# 使用tqdm显示进度条
+
 output_file = ''
 for idx, item in tqdm(enumerate(data)):
-    # ['ID', '性别', '职业', '年龄', '婚姻', '病史陈述者', '发病节气', '主诉', '症状', '中医望闻切诊', '病史', '体格检查', '辅助检查', '疾病', '证型', '处方']
-    id = item['ID'] # id
-    gender = item['性别'] # 性别
-    job = item['职业'] # 职业
-    age = item['年龄'] # 年龄
-    marriage = item['婚姻'] # 婚姻
+    id = item['ID']
+    gender = item['性别'] 
+    job = item['职业']
+    age = item['年龄']
+    marriage = item['婚姻'] 
     status = item['病史陈述者']
     disease_time = item['发病节气']
     chief_complaint = item['主诉']
-    symptom = item['症状'] # 症状
-    tcm_examination = item['中医望闻切诊'] # 中医望闻切诊
-    history = item['病史'] # 病史
-    physical_examination = item['体格检查'] # 体格检查
-    auxiliary_examination = item['辅助检查'] # 辅助检查
-    drug = item['处方'] # 处方
+    symptom = item['症状']
+    tcm_examination = item['中医望闻切诊']
+    history = item['病史']
+    physical_examination = item['体格检查']
+    auxiliary_examination = item['辅助检查']
+    drug = item['处方']
     writer = open(output_path, 'a', encoding='utf-8')
     query = f'''
 任务：根据患者[基本信息],[主诉],[症状],[中医望闻切诊],[病史],[体格检查],[辅助检查]等信息,在[草药]中为患者推荐需要使用的[推荐草药]。

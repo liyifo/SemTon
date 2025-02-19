@@ -45,7 +45,6 @@ class SymptomDrugDataset(Dataset):
 
         return input_ids, attention_mask, labels_tensor, loss_multi_target, treatment_encodings['input_ids'].squeeze(), treatment_encodings['attention_mask'].squeeze(),
 
-# 模型定义
 class GraphConvolution(torch.nn.Module):
 
     def __init__(self, in_features, out_features, bias=True):
@@ -194,7 +193,6 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
     model.to(device)
 
     for epoch in range(num_epochs):
-        # 训练阶段
         model.train()
         train_loss = 0.0
         for input_ids, attention_mask, labels, labels_margin,treat_ids, treat_mask in tqdm(train_loader, desc=f"Epoch {epoch + 1} Training"):

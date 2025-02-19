@@ -25,7 +25,6 @@ def avg_herb(target, pred):
     return num_pred
 
 name = 'LoRA'
-# 示例用法
 target_file = 'test.json'
 pred_file = f'output/{name}.json'
 

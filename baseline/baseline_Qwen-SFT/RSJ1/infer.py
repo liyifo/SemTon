@@ -5,7 +5,6 @@ from openai import OpenAI
 import logging
 name = 'llmv2'
 print(name)
-# 配置log文件将控制台输出保存到文件
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[
@@ -31,18 +30,16 @@ model_type = client.models.list().data[0].id
 logger.info(f'model_type: {model_type}')
 patients = []
 patient_dict = {}
-# 读取 CSV 文件
+
 data_path = 'data/llm_test.jsonl'
 output_path = f'output/{name}.jsonl'
-# data = json.load(open(data_path, 'r', encoding='utf-8'))
+
 data = read_jsonl(data_path)
 logger.info(f'总病历数：{len(data)}')
-# 使用tqdm显示进度条
 output_file = ''
 for idx, item in tqdm(enumerate(data)):
     query = item['query']
     logger.error(f'=========================={id}=====================================\n\n') 
-    # logger.info(f'查询：{query}')
     messages = []
     messages.append({
         'role': 'user',
