@@ -2,9 +2,7 @@ from transformers import Qwen2VLForConditionalGeneration, AutoTokenizer, AutoPro
 from qwen_vl_utils import process_vision_info
 import json
 
-# CUDA_VISIBLE_DEVICES=0,1 python chat.py
 
-# default: Load the model on the available device(s)
 model = Qwen2VLForConditionalGeneration.from_pretrained(
     "./SemTon-TMD", torch_dtype="auto", device_map="auto"
 )
@@ -12,7 +10,6 @@ model = Qwen2VLForConditionalGeneration.from_pretrained(
 processor = AutoProcessor.from_pretrained("./SemTon-TMD")
 
 
-# 数据格式与Appendix中的Prompt一致，在json里是列表
 with open("./data/llm_input.json", "r") as json_file:
     data = json.load(json_file)
 
@@ -42,7 +39,7 @@ for index, item in enumerate(data):
     )
     inputs = inputs.to("cuda")
 
-    # Inference: Generation of the output
+
     generated_ids = model.generate(**inputs, max_new_tokens=128)
     generated_ids_trimmed = [
         out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)

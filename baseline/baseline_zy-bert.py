@@ -15,7 +15,7 @@ def set_seed(seed):
 seed = 45
 set_seed(seed)
 
-# 数据集类
+
 class SymptomDrugDataset(Dataset):
     def __init__(self, data, tokenizer, max_length):
         self.data = data
@@ -30,27 +30,24 @@ class SymptomDrugDataset(Dataset):
         encodings = self.tokenizer(text, padding="max_length", truncation=True, max_length=self.max_length, return_tensors="pt")
         input_ids = encodings["input_ids"].squeeze()
         attention_mask = encodings["attention_mask"].squeeze()
-        labels_tensor = torch.zeros(herb_num)  # 假设药物 ID 总数为 1000
-        # print('herb_num', herb_num)
-        labels_tensor[labels] = 1  # 将对应的药物 ID 设置为 1
+        labels_tensor = torch.zeros(herb_num)
+
+        labels_tensor[labels] = 1
         return input_ids, attention_mask, labels_tensor
 
-# 模型定义
 class BERTForMultiLabelClassification(nn.Module):
     def __init__(self, pretrained_model_name, num_labels):
         super(BERTForMultiLabelClassification, self).__init__()
         self.bert = BertModel.from_pretrained(pretrained_model_name)
         for param in self.bert.parameters():
-            param.requires_grad = False  # 冻结BERT本体
-        # print('hidden ', self.bert.config.hidden_size)
-        #self.dropout = nn.Dropout(0.1)
+            param.requires_grad = False  
         self.classifier = nn.Linear(self.bert.config.hidden_size, num_labels)
 
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        #pooled_output = outputs.pooler_output
+
         pooled_output = outputs.last_hidden_state[:, 0, :]
-        # pooled_output = self.dropout(pooled_output)
+
         logits = self.classifier(pooled_output)
         return logits
 
@@ -92,19 +89,18 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
             
             logits = model(input_ids, attention_mask)
             loss_bce = criterion_bce(logits, labels)
-            #loss_margin = criterion_margin(torch.sigmoid(logits), labels.long())
-            # loss = 0.95*loss_bce + 0.05*loss_margin
+
             loss = loss_bce
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
 
-        # 计算训练集的平均损失
+
         avg_train_loss = train_loss / len(train_loader)
         print(f"Epoch {epoch + 1} - Training Loss: {avg_train_loss:.4f}")
 
-        # 测试阶段
+
         model.eval()
         all_predictions = []
         all_labels = []
@@ -117,16 +113,14 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
                 all_labels.append(labels)
         all_predictions = torch.cat(all_predictions, dim=0)
         all_labels = torch.cat(all_labels, dim=0)
-        # print(all_predictions.shape, all_labels.shape)
 
-        # 计算测试集指标
 
         threshold = 0.2
         metrics = compute_metrics(all_predictions, all_labels, threshold)
         print(f"Epoch {epoch + 1} - Testing Metrics (Threshold {threshold}): {metrics}")
         with open('./model_metric-ccl-head-bertchinese.txt', 'a') as f:
             f.write(f"Epoch {epoch + 1} - Testing Metrics (Threshold {threshold}): {metrics}\n")
-        # 更新最佳结果
+
         if metrics["Jaccard"] > best_metrics["Jaccard"]:
             best_metrics = metrics
             best_metrics["epoch"] = epoch + 1
@@ -143,14 +137,14 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
     print(f"Best Epoch: {best_metrics['epoch']}, Metrics: {best_metrics}")
     return model, best_metrics
 
-# 主函数
+
 if __name__ == "__main__":
-    # 示例数据
+
     data, herb_num, co_adj, name_list = read_rsj_classifier_data2()
     print('数据加载完毕..')
-    # tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
+
     tokenizer = BertTokenizer.from_pretrained("./zy-bert")
-    #tokenizer = BertTokenizer.from_pretrained("./bert-base-chinese")
+
     print('tokenizer加载完毕..')
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print('device:', device)
@@ -160,5 +154,5 @@ if __name__ == "__main__":
 
     train_loader, test_loader = prepare_data(data, tokenizer, batch_size)
     model = BERTForMultiLabelClassification("./zy-bert", herb_num)
-    #model = BERTForMultiLabelClassification("./bert-base-chinese", herb_num)
+
     trained_model, best_metrics = train_model(model, train_loader, test_loader, num_epochs, device, learning_rate)

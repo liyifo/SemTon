@@ -35,9 +35,7 @@ def data_process():
                 med2id[m] = len(med2id)
                 id2med[len(med2id)-1] = m
     herb_num = len(med2id)
-    # 将id2med转换为list
     name_list = [id2med[i] for i in range(len(id2med))]
-    # input -> data['主诉] + data['症状'] + data['中医望闻切诊']
     end_data = []
     for data in all_data_list:
         med_list = eval(data['处方'])
@@ -60,10 +58,10 @@ class SymptomDrugDataset(Dataset):
         encodings = self.tokenizer(text, padding="max_length", truncation=True, max_length=self.max_length, return_tensors="pt")
         input_ids = encodings["input_ids"].squeeze()
         attention_mask = encodings["attention_mask"].squeeze()
-        labels_tensor = torch.zeros(herb_num)  # 假设药物 ID 总数为 1000
-        # print('herb_num', herb_num)
+        labels_tensor = torch.zeros(herb_num) 
+
         treatment_encodings = self.tokenizer(treatment, padding="max_length", truncation=True, max_length=self.max_length, return_tensors="pt")
-        labels_tensor[labels] = 1  # 将对应的药物 ID 设置为 1
+        labels_tensor[labels] = 1 
         return input_ids, attention_mask, labels_tensor
 
 class RecModel(nn.Module):
@@ -80,7 +78,7 @@ class RecModel(nn.Module):
         logits = self.classifier(patient_emb)
         return logits
 
-# 数据预处理
+
 def prepare_data(data, tokenizer, batch_size, train_ratio=0.8):
     dataset = SymptomDrugDataset(data, tokenizer, max_length=64)
     train_size = int(len(dataset) * train_ratio)
@@ -91,7 +89,7 @@ def prepare_data(data, tokenizer, batch_size, train_ratio=0.8):
     return train_loader, test_loader
 
 
-# Metrics
+
 def compute_metrics(predictions, labels, threshold):
     preds = (predictions > threshold).int()
     f1 = f1_score(labels.cpu().float(), preds.cpu().float(), average="samples")
@@ -136,10 +134,7 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
         all_labels = torch.cat(all_labels, dim=0)
         metrics = compute_metrics(all_predictions, all_labels, 0.2)
         print(f"Epoch {epoch + 1} - Testing Metrics: {metrics}")
-        # file_path = './mlp_train.txt'
-        # with open(file_path, 'a') as f:
-        #     f.write(f"Epoch {epoch + 1} - Loss: {train_loss} - Testing Metrics: {metrics}\n")
-        # 更新最佳结果
+
         if metrics["Jaccard"] > best_metrics["Jaccard"]:
             best_metrics = metrics
             best_metrics["epoch"] = epoch + 1

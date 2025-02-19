@@ -20,7 +20,7 @@ seed = 42
 set_seed(seed)
 log_file_path = './model_metric.txt'
 
-# 数据集类
+
 class SymptomDrugDataset(Dataset):
     def __init__(self, data, tokenizer, max_length):
         self.data = data
@@ -35,11 +35,10 @@ class SymptomDrugDataset(Dataset):
         encodings = self.tokenizer(text, padding="max_length", truncation=True, max_length=self.max_length, return_tensors="pt")
         input_ids = encodings["input_ids"].squeeze()
         attention_mask = encodings["attention_mask"].squeeze()
-        labels_tensor = torch.zeros(herb_num)  # 假设药物 ID 总数为 1000
-        # print('herb_num', herb_num)
-        treatment_encodings = self.tokenizer(treatment, padding="max_length", truncation=True, max_length=self.max_length, return_tensors="pt")
-        labels_tensor[labels] = 1  # 将对应的药物 ID 设置为 1
+        labels_tensor = torch.zeros(herb_num)
 
+        treatment_encodings = self.tokenizer(treatment, padding="max_length", truncation=True, max_length=self.max_length, return_tensors="pt")
+        labels_tensor[labels] = 1
         loss_multi_target = -torch.ones(herb_num).long()
         for id, item in enumerate(labels):
             loss_multi_target[id] = item
@@ -48,9 +47,6 @@ class SymptomDrugDataset(Dataset):
 
 # 模型定义
 class GraphConvolution(torch.nn.Module):
-    """
-    Simple GCN layer, similar to https://arxiv.org/abs/1609.02907
-    """
 
     def __init__(self, in_features, out_features, bias=True):
         super(GraphConvolution, self).__init__()
@@ -121,9 +117,9 @@ class SemTon(nn.Module):
         self.tongue_bert = BertModel.from_pretrained('./shexiang_bert_model')
         self.dropout = torch.nn.Dropout(p=0.2)
         for param in self.text_bert.parameters():
-            param.requires_grad = False  # 冻结BERT本体
+            param.requires_grad = False 
         for param in self.tongue_bert.parameters():
-            param.requires_grad = False  # 冻结BERT本体
+            param.requires_grad = False
 
         self.patient_fcn = torch.nn.Sequential(
             torch.nn.Linear(self.text_bert.config.hidden_size*2, 64),
@@ -160,7 +156,7 @@ class SemTon(nn.Module):
     
 
         med_embedding = self.text_bert(input_ids=med_input_ids, attention_mask=med_attention_mask)
-        med_embedding = med_embedding.last_hidden_state[:, 0, :] # (med_num, dimension)
+        med_embedding = med_embedding.last_hidden_state[:, 0, :] 
 
         med_embedding = self.med_fcn(med_embedding)
 
@@ -171,7 +167,7 @@ class SemTon(nn.Module):
 
         return recommendation_output
 
-# Metrics
+
 def compute_metrics(predictions, labels, threshold=0.3):
     preds = (predictions > threshold).int()
     f1 = f1_score(labels.cpu(), preds.cpu(), average="samples")
@@ -180,7 +176,7 @@ def compute_metrics(predictions, labels, threshold=0.3):
     avg_drug_count = preds.sum(axis=1).float().mean().item()
     return {"F1": f1, "Jaccard": jaccard, "PRAUC": prauc, "AVG": avg_drug_count}
 
-# 数据预处理
+
 def prepare_data(data, tokenizer, batch_size, train_ratio=0.8):
     dataset = SymptomDrugDataset(data, tokenizer, max_length=128)
     train_size = int(len(dataset) * train_ratio)
@@ -190,7 +186,7 @@ def prepare_data(data, tokenizer, batch_size, train_ratio=0.8):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, test_loader
 
-# 训练函数
+
 def train_model(model, train_loader, test_loader, num_epochs, device, learning_rate, medname_inputs):
     optimizer = AdamW(list(model.parameters()), lr=learning_rate)
     epochs_without_improvement = 0
@@ -203,28 +199,21 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
         train_loss = 0.0
         for input_ids, attention_mask, labels, labels_margin,treat_ids, treat_mask in tqdm(train_loader, desc=f"Epoch {epoch + 1} Training"):
             input_ids, attention_mask, labels,labels_margin,treat_ids, treat_mask = input_ids.to(device), attention_mask.to(device), labels.to(device), labels_margin.to(device),treat_ids.to(device), treat_mask.to(device)
-            # print(input_ids.shape, medname_inputs['input_ids'].shape, treat_ids.shape)
+
             logits = model(input_ids, attention_mask, medname_inputs['input_ids'], medname_inputs['attention_mask'],treat_ids, treat_mask)
             
             loss_bce = F.binary_cross_entropy_with_logits(logits, labels)
-            #loss_multi = F.multilabel_margin_loss(logits, labels_margin)
-            # recommend_count = (torch.sigmoid(logits) > 0.5).sum(dim=-1).float()
-            # avg_drug_count = (labels == 1).sum(dim=1).float().mean()
-            # recommendation_penalty = torch.abs(recommend_count - avg_drug_count).mean()
 
-            #loss = 0.95*loss_bce + 0.05*loss_multi
             loss = loss_bce 
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
-        # 计算训练集的平均损失
+
         avg_train_loss = train_loss / len(train_loader)
-        # print(f"Epoch {epoch + 1} - Training Loss: {avg_train_loss:.4f}, BCE Loss: {avg_bec_tloss:.4f}, Contrastive Loss: {avg_contrastive_loss:.4f}")
         print(f"Epoch {epoch + 1} - Training Loss: {avg_train_loss:.4f}")
 
-        # 测试阶段
         model.eval()
         all_predictions = []
         all_labels = []
@@ -243,7 +232,6 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
         print(f"Epoch {epoch + 1} - Testing Metrics: {metrics} - Threshold: {threshold}")
         with open(log_file_path, 'a') as f:
             f.write(f"Epoch {epoch + 1} - Loss: {avg_train_loss} - Testing Metrics: {metrics} - Threshold: {threshold}\n")
-                # 更新最佳结果
         if metrics["Jaccard"] > best_metrics["Jaccard"]:
             best_metrics = metrics
             best_metrics["epoch"] = epoch + 1
@@ -262,12 +250,9 @@ def train_model(model, train_loader, test_loader, num_epochs, device, learning_r
     print(f"Best Epoch: {best_metrics['epoch']}, Metrics: {best_metrics}")
     return model, best_metrics
 
-# 主函数
 if __name__ == "__main__":
-    # 示例数据
     data, herb_num, co_adj, name_list = read_rsj_classifier_data_ccl()
     print('数据加载完毕..')
-    # tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
     tokenizer = BertTokenizer.from_pretrained("./zy-bert")
     print('tokenizer加载完毕..')
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
