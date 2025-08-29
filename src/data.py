@@ -3,7 +3,7 @@ import numpy as np
 
 
 def read_single_classifier_data():
-    with open("../datg/finetune_input.json", "r") as json_file:
+    with open("../data/finetune_input.json", "r") as json_file:
         data_list = json.load(json_file)
     end_data = []
     end_data.append([(i['chief_complaint']+i['medical_history'], i['baohou']) for i in data_list])
@@ -26,7 +26,7 @@ def read_single_classifier_data():
 
 
 def read_single_classifier_data2():
-    with open("../datg/finetune_input.json", "r") as json_file:
+    with open("../data/finetune_input.json", "r") as json_file:
         data_list = json.load(json_file)
     end_data = [(i['input'], i['baohou'], i['funi'], i['runzao'], i['chihen'],i['dianci'],i['liehen'],i['laonen'],i['pangda'],i['yudian'],i['shese'],i['taise']) for i in data_list]
 
@@ -76,11 +76,11 @@ def read_rsj_classifier_data2():
 
 
 def read_rsj_classifier_data_ccl():
-    with open("../datg/TCM-TBOSD-train.json", "r") as json_file:
+    with open("../data/TCM-TBOSD-train.json", "r") as json_file:
         train_data_list = json.load(json_file)
-    with open("../datg/TCM-TBOSD-test-A.json", "r") as json_file:
+    with open("../data/TCM-TBOSD-test-A.json", "r") as json_file:
         testa_data_list = json.load(json_file)
-    with open("../datg/TCM-TBOSD-test-B.json", "r") as json_file:
+    with open("../data/TCM-TBOSD-test-B.json", "r") as json_file:
         testb_data_list = json.load(json_file)
     all_data_list = train_data_list + testa_data_list + testb_data_list
     med2id = {}
