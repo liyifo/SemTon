@@ -1,7 +1,7 @@
 # SemTon
 
-Semantics-driven Traditional Chinese Medicine Prescription Recommendation with Symptom-based Tongue Manifestation Completion
-
+Semantics-driven Traditional Chinese Medicine Prescription Recommendation with Tongue Manifestation Completion
+![Framework](images/fig-framework.png)
 ## Environment
 
 ```
@@ -17,11 +17,11 @@ You can build the conda environment for our experiment using the following comma
 conda env create -f environment.yml
 ```
 
-### Datasets
+## Datasets
 
-We have disclosed the details of the dataset along with examples in the Appendix.
+We have disclosed the details of the dataset along with examples, and conducted detailed analyses in the paper.
 
-Here, we extracted 50 complete samples in each of RSJ1 and SZY for reference. Please go to the `data` folder to view them.
+Here, we extracted 50 complete samples   in each of RSJ1 and SZY for reference. Please go to the `data` folder to view them.
 
 The full datasets will be made publicly avail able once the manuscript is accepted.
 
@@ -40,6 +40,24 @@ The full datasets will be made publicly avail able once the manuscript is accept
 | **avg. / max # of symptom text**    | 122.91 / 393    | 136.42 / 388 |
 | **avg. / max # of tongue text**     | 6.35 / 20       | -            |
 | **avg. size of image width/height** | 267.15 / 277.39 | -            |
+
+### Image Exaxmple
+![tongue_images](images/tongue_images.png)
+
+### Image quality and color consistency analysis across the RSJ1 dataset
+![image_analysis_results](images/image_analysis_results.png)
+
+### High-frequency symptom terms and herb ingredients in two TCM datasets
+![vocabulary_wordclouds](images/vocabulary_wordclouds.png)
+
+### A co-occurrence analysis of two datasets using chord diagrams
+![co_occurrence_chord_mpl_mplchord](images/co_occurrence_chord_mpl_mplchord.png)
+
+### Comparative analyses of herb preference for tongue body color and tongue coating color in two datasets
+![tongue_analysis_heatmaps](images/tongue_analysis_heatmaps.png)
+
+### Integrated comparison analyses of syndrome-herb patterns and symptom-prescription similarities across two datasets
+![difference_analysis](images/difference_analysis.png)
 
 ## Run the SemTon
 
